@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="Simple progressive overload gym tracker">
+  <title>Gym Overload</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+  <style>
+    :root{--bg:#f3f4f6;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--accent:#111827;--danger:#b91c1c;--radius:16px}
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{min-height:100vh}
+    button,input{font:inherit}
+    button{border:0;border-radius:12px;padding:13px 16px;cursor:pointer}
+    .app{max-width:720px;margin:0 auto;padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))}
+    header{display:flex;justify-content:space-between;align-items:center;padding:18px 0 12px}
+    h1{font-size:24px;margin:0}
+    h2{font-size:18px;margin:0}
+    h3{font-size:16px;margin:0}
+    .muted{color:var(--muted)}
+    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 16px}
+    .tab{background:var(--card);color:var(--muted);border:1px solid var(--line)}
+    .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .primary{background:var(--accent);color:#fff;width:100%}
+    .secondary{background:#eef0f3;color:var(--text)}
+    .danger{background:#fee2e2;color:var(--danger)}
+    .small{padding:9px 12px;font-size:14px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px}
+    input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:12px;background:#fff}
+    .set-row{display:grid;grid-template-columns:44px 1fr 1fr 40px;gap:8px;align-items:center;margin-top:8px}
+    .set-no{color:var(--muted);font-size:14px;text-align:center}
+    .tiny{padding:8px 10px;background:#f3f4f6}
+    .exercise-title{font-weight:700}
+    .hint{font-size:13px;color:var(--muted);margin-top:4px}
+    .pill{background:#f3f4f6;padding:5px 9px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .empty{padding:28px 12px;text-align:center;color:var(--muted)}
+    .history-item{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+    .history-item:first-child{border-top:0;padding-top:0;margin-top:0}
+    .session-head{font-weight:700;font-size:14px}
+    .sets-line{font-size:14px;margin-top:6px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .install{display:none}
+    .footer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:20px}
+    @media (min-width:620px){.app{padding-left:24px;padding-right:24px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Gym Overload</h1>
+      <div class="hint">Track your lifts. Beat your last session.</div>
+    </div>
+    <span class="pill" id="storageStatus">On device</span>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="session">Session</button>
+    <button class="tab" data-tab="exercises">Exercises</button>
+    <button class="tab" data-tab="history">History</button>
+  </nav>
+
+  <main id="session" class="view"></main>
+  <main id="exercises" class="view" hidden></main>
+  <main id="history" class="view" hidden></main>
+
+  <div class="footer-note">Your workout data is stored in this browser on this device. Use Backup regularly.</div>
+</div>
+
+<script>
+const KEY = 'gym-overload-v1';
+const defaultState = { exercises: [], sessions: [] };
+let state = loadState();
+let activeTab = 'session';
+let currentSession = { date: today(), exercises: [] };
+let deferredInstallPrompt = null;
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(KEY)) || structuredClone(defaultState); }
+  catch { return structuredClone(defaultState); }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function esc(s){ return String(s).replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function fmtDate(date){ return new Date(date+'T00:00:00').toLocaleDateString('en-NZ',{day:'numeric',month:'short',year:'numeric'}); }
+function exerciseById(id){ return state.exercises.find(e=>e.id===id); }
+function previousFor(exId){
+  const found = state.sessions.filter(s=>s.exercises.some(e=>e.exerciseId===exId)).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!found.length) return null;
+  const ex = found[0].exercises.find(e=>e.exerciseId===exId);
+  return {session: found[0], exercise: ex};
+}
+function switchTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=>v.hidden=v.id!==tab);
+  render();
+}
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+function render(){
+  renderSession(); renderExercises(); renderHistory();
+}
+
+function renderSession(){
+  const root=document.getElementById('session');
+  let html=`<div class="card"><div class="row"><div><h2>Today's session</h2><div class="hint">${fmtDate(currentSession.date)}</div></div><button class="secondary small" id="clearSession">Clear</button></div></div>`;
+
+  if(!state.exercises.length){
+    html+=`<div class="card empty">Add your first exercise in the <b>Exercises</b> tab.</div>`;
+  } else {
+    currentSession.exercises.forEach((ce,idx)=>{
+      const ex=exerciseById(ce.exerciseId); if(!ex) return;
+      const prev=previousFor(ce.exerciseId);
+      html+=`<div class="card">
+        <div class="row"><div><div class="exercise-title">${esc(ex.name)}</div>${prev?`<div class="hint">Last time: ${prev.exercise.sets.map(s=>`${s.weight} kg × ${s.reps}`).join(' · ')}</div>`:`<div class="hint">No previous session</div>`}</div><button class="danger small remove-ex" data-index="${idx}">Remove</button></div>
+        <div class="sets">`;
+      ce.sets.forEach((set,sidx)=>{
+        html+=`<div class="set-row"><div class="set-no">${sidx+1}</div><input class="weight-input" data-index="${idx}" data-set="${sidx}" data-field="weight" type="number" step="0.5" min="0" inputmode="decimal" placeholder="kg" value="${set.weight ?? ''}"><input class="reps-input" data-index="${idx}" data-set="${sidx}" data-field="reps" type="number" step="1" min="0" inputmode="numeric" placeholder="reps" value="${set.reps ?? ''}"><button class="tiny remove-set" data-index="${idx}" data-set="${sidx}">×</button></div>`;
+      });
+      html+=`</div><div style="margin-top:10px"><button class="secondary small add-set" data-index="${idx}">+ Add set</button></div></div>`;
+    });
+    html+=`<div class="card"><div class="stack"><button class="secondary" id="addExerciseToSession">+ Add exercise to session</button><button class="primary" id="saveSession">Save session</button></div></div>`;
+  }
+  root.innerHTML=html;
+  bindSession();
+}
+
+function bindSession(){
+  document.getElementById('clearSession')?.addEventListener('click',()=>{currentSession={date:today(),exercises:[]};render();});
+  document.querySelectorAll('.remove-ex').forEach(b=>b.addEventListener('click',()=>{currentSession.exercises.splice(+b.dataset.index,1);render();}));
+  document.querySelectorAll('.add-set').forEach(b=>b.addEventListener('click',()=>{currentSession.exercises[+b.dataset.index].sets.push({weight:'',reps:''});render();}));
+  document.querySelectorAll('.remove-set').forEach(b=>b.addEventListener('click',()=>{currentSession.exercises[+b.dataset.index].sets.splice(+b.dataset.set,1); if(!currentSession.exercises[+b.dataset.index].sets.length) currentSession.exercises.splice(+b.dataset.index,1); render();}));
+  document.querySelectorAll('[data-field]').forEach(inp=>inp.addEventListener('input',()=>{const i=+inp.dataset.index,s=+inp.dataset.set;currentSession.exercises[i].sets[s][inp.dataset.field]=inp.value;}));
+  document.getElementById('addExerciseToSession')?.addEventListener('click',showAddExercisePicker);
+  document.getElementById('saveSession')?.addEventListener('click',saveCurrentSession);
+}
+
+function showAddExercisePicker(){
+  const remaining=state.exercises.filter(e=>!currentSession.exercises.some(c=>c.exerciseId===e.id));
+  if(!remaining.length){alert('All exercises are already in this session.');return;}
+  const name=prompt('Enter the exercise name to add:\n\n'+remaining.map(e=>e.name).join('\n'));
+  if(!name)return;
+  const match=remaining.find(e=>e.name.toLowerCase()===name.trim().toLowerCase());
+  if(!match){alert('Exercise not found. Add it in the Exercises tab first.');return;}
+  currentSession.exercises.push({exerciseId:match.id,sets:[{weight:'',reps:''}]});render();
+}
+
+function saveCurrentSession(){
+  const usable=currentSession.exercises.filter(e=>e.sets.some(s=>s.weight!==''||s.reps!==''));
+  if(!usable.length){alert('Add at least one set before saving.');return;}
+  state.sessions.push({id:uid(),date:currentSession.date,exercises:usable.map(e=>({exerciseId:e.exerciseId,sets:e.sets.filter(s=>s.weight!==''||s.reps!=='').map(s=>({weight:Number(s.weight)||0,reps:Number(s.reps)||0}))}))});
+  save(); currentSession={date:today(),exercises:[]}; alert('Session saved.'); render();
+}
+
+function renderExercises(){
+  const root=document.getElementById('exercises');
+  root.innerHTML=`<div class="card"><h2>Add exercise</h2><div class="stack" style="margin-top:10px"><input id="newExercise" placeholder="e.g. Bench Press" autocomplete="off"><button class="primary" id="addExercise">Add exercise</button></div></div>`+
+  (state.exercises.length?`<div class="card"><h2>Your exercises</h2><div class="stack" style="margin-top:12px">${state.exercises.map(e=>{const prev=previousFor(e.id);return `<div class="row"><div><div class="exercise-title">${esc(e.name)}</div><div class="hint">${prev?`Last: ${prev.exercise.sets.map(s=>`${s.weight} kg × ${s.reps}`).join(' · ')}`:'No sessions yet'}</div></div><button class="danger small delete-ex" data-id="${e.id}">Delete</button></div>`}).join('')}</div></div>`:`<div class="card empty">No exercises yet.</div>`);
+  document.getElementById('addExercise')?.addEventListener('click',addExercise);
+  document.getElementById('newExercise')?.addEventListener('keydown',e=>{if(e.key==='Enter')addExercise();});
+  document.querySelectorAll('.delete-ex').forEach(b=>b.addEventListener('click',()=>deleteExercise(b.dataset.id)));
+}
+function addExercise(){
+  const input=document.getElementById('newExercise'); const name=input.value.trim(); if(!name)return;
+  if(state.exercises.some(e=>e.name.toLowerCase()===name.toLowerCase())){alert('That exercise already exists.');return;}
+  state.exercises.push({id:uid(),name}); save(); input.value=''; renderExercises();
+}
+function deleteExercise(id){
+  if(!confirm('Delete this exercise? Existing session history will remain, but the exercise name will no longer be available.'))return;
+  state.exercises=state.exercises.filter(e=>e.id!==id); save(); render();
+}
+
+function renderHistory(){
+  const root=document.getElementById('history');
+  if(!state.sessions.length){root.innerHTML=`<div class="card empty">No saved sessions yet.</div><div class="card"><h2>Backup</h2><div class="stack" style="margin-top:10px"><button class="secondary" id="exportBtn">Export data</button><button class="secondary" id="importBtn">Import data</button><input id="importFile" type="file" accept="application/json" hidden></div></div>`;bindBackup();return;}
+  const sessions=[...state.sessions].sort((a,b)=>b.date.localeCompare(a.date));
+  root.innerHTML=`<div class="card"><div class="row"><h2>Saved sessions</h2><span class="pill">${sessions.length}</span></div>${sessions.map(s=>`<div class="history-item"><div class="row"><div class="session-head">${fmtDate(s.date)}</div><button class="danger small delete-session" data-id="${s.id}">Delete</button></div>${s.exercises.map(e=>{const ex=exerciseById(e.exerciseId);return `<div class="sets-line"><b>${esc(ex?.name||'Deleted exercise')}</b>: ${e.sets.map(x=>`${x.weight} kg × ${x.reps}`).join(' · ')}</div>`}).join('')}</div>`).join('')}</div><div class="card"><h2>Backup</h2><div class="stack" style="margin-top:10px"><button class="secondary" id="exportBtn">Export data</button><button class="secondary" id="importBtn">Import data</button><input id="importFile" type="file" accept="application/json" hidden></div></div>`;
+  bindBackup(); document.querySelectorAll('.delete-session').forEach(b=>b.addEventListener('click',()=>{if(confirm('Delete this session?')){state.sessions=state.sessions.filter(s=>s.id!==b.dataset.id);save();renderHistory();}}));
+}
+function bindBackup(){
+  document.getElementById('exportBtn')?.addEventListener('click',()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gym-overload-backup.json';a.click();URL.revokeObjectURL(a.href);});
+  document.getElementById('importBtn')?.addEventListener('click',()=>document.getElementById('importFile').click());
+  document.getElementById('importFile')?.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const imported=JSON.parse(await file.text());if(!Array.isArray(imported.exercises)||!Array.isArray(imported.sessions))throw new Error();state=imported;save();render();alert('Backup imported.');}catch{alert('That file does not look like a valid Gym Overload backup.');}});
+}
+
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;});
+
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
+render();
+</script>
+</body>
+</html>
