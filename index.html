@@ -10,38 +10,38 @@
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <style>
     :root{
-      --bg:#f5f6f8;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;
-      --accent:#111827;--accent-2:#374151;--soft:#eef0f3;--danger:#b91c1c;
+      --bg:#f8f7f5;--card:#fff;--text:#171717;--muted:#6b7280;--line:#eadfd7;
+      --accent:#f97316;--accent-2:#ea580c;--soft:#fff3eb;--danger:#b91c1c;
       --good:#166534;--good-bg:#dcfce7;--radius:18px
     }
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    html,body{margin:0;padding:0;background:linear-gradient(180deg,#fffaf6 0%,var(--bg) 26%,var(--bg) 100%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     body{min-height:100vh}
     button,input{font:inherit}
     button{border:0;cursor:pointer}
     button:disabled{opacity:.5;cursor:not-allowed}
     .app{max-width:720px;margin:0 auto;padding:env(safe-area-inset-top) 14px calc(26px + env(safe-area-inset-bottom))}
-    header{padding:18px 2px 12px}
+    header{padding:18px 12px 14px;margin:0 0 12px;border:1px solid #f3d7c3;border-radius:20px;background:linear-gradient(135deg,#fff7ed 0%,#fff 72%);box-shadow:0 8px 24px rgba(249,115,22,.08)}
     h1{font-size:25px;line-height:1.1;margin:0}
     h2{font-size:19px;line-height:1.2;margin:0}
     h3{font-size:16px;margin:0}
     .muted{color:var(--muted)}
     .hint{font-size:13px;color:var(--muted);margin-top:4px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 3px 12px rgba(17,24,39,.04)}
+    .card{background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 5px 18px rgba(120,53,15,.05)}
     .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
     .stack{display:flex;flex-direction:column;gap:10px}
     .toolbar{display:flex;gap:8px;flex-wrap:wrap}
-    .primary{background:var(--accent);color:#fff;border-radius:13px;padding:13px 16px;font-weight:700}
-    .secondary{background:var(--soft);color:var(--text);border-radius:13px;padding:12px 14px;font-weight:650}
+    .primary{background:linear-gradient(180deg,#fb923c 0%,var(--accent) 100%);color:#fff;border-radius:13px;padding:13px 16px;font-weight:750;box-shadow:0 5px 12px rgba(249,115,22,.20)}
+    .secondary{background:var(--soft);color:#9a3412;border:1px solid #fed7aa;border-radius:13px;padding:12px 14px;font-weight:700}
     .danger{background:#fee2e2;color:var(--danger);border-radius:12px;padding:10px 12px;font-weight:650}
     .small{padding:9px 11px;font-size:14px}
     input{width:100%;padding:12px 13px;border:1px solid #d1d5db;border-radius:12px;background:#fff;color:var(--text);outline:none}
-    input:focus{border-color:#6b7280;box-shadow:0 0 0 3px rgba(17,24,39,.08)}
+    input:focus{border-color:#fb923c;box-shadow:0 0 0 3px rgba(249,115,22,.14)}
     .search{font-size:16px;padding:13px 14px}
     .section-title{margin-bottom:10px}
     .exercise-list{display:flex;flex-direction:column;gap:8px}
-    .exercise-item{width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;text-align:left;display:flex;justify-content:space-between;gap:12px;align-items:center}
-    .exercise-item:active{transform:scale(.995)}
+    .exercise-item{width:100%;background:linear-gradient(90deg,#fff 0%,#fffaf7 100%);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:left;display:flex;justify-content:space-between;gap:12px;align-items:center;box-shadow:0 2px 8px rgba(120,53,15,.03)}
+    .exercise-item:active{transform:scale(.995);border-color:#fdba74;box-shadow:0 3px 10px rgba(249,115,22,.10)}
     .exercise-name{font-weight:750}
     .exercise-last{font-size:13px;color:var(--muted);margin-top:4px}
     .chevron{color:#9ca3af;font-size:22px;line-height:1}
@@ -55,19 +55,19 @@
     .history-block:first-child{border-top:0;padding-top:0;margin-top:0}
     .date{font-weight:750}
     .sets-line{font-size:15px;margin-top:7px;line-height:1.5}
-    .log-card{background:#fafafa;border:1px solid var(--line);border-radius:15px;padding:13px;margin-top:12px}
+    .log-card{background:linear-gradient(180deg,#fffaf7 0%,#fff 100%);border:1px solid #f3d7c3;border-radius:15px;padding:13px;margin-top:12px}
     .set-head,.set-row{display:grid;grid-template-columns:38px 1fr 1fr 42px;gap:8px;align-items:center}
     .set-head{font-size:12px;color:var(--muted);padding:0 0 4px}
     .set-number{text-align:center;color:var(--muted);font-size:14px}
     .set-row{margin-top:8px}
-    .tiny{background:var(--soft);border-radius:10px;padding:10px}
+    .tiny{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:10px;padding:10px}
     .copy-row{display:flex;gap:8px;margin-top:12px}
     .notice{font-size:13px;color:var(--muted);background:var(--soft);padding:10px 12px;border-radius:12px;margin-top:10px}
-    .bottom-actions{position:sticky;bottom:0;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 24%)}
+    .bottom-actions{position:sticky;bottom:0;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,#fffaf6 30%,#fffaf6 100%)}
     .footer-note{font-size:12px;color:var(--muted);text-align:center;margin-top:16px}
     .nav-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0 14px}
-    .nav-button{background:#fff;color:var(--muted);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-weight:700}
-    .nav-button.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .nav-button{background:#fff;color:var(--muted);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-weight:700;box-shadow:0 2px 8px rgba(120,53,15,.03)}
+    .nav-button.active{background:linear-gradient(180deg,#fb923c 0%,var(--accent) 100%);color:#fff;border-color:var(--accent);box-shadow:0 5px 12px rgba(249,115,22,.18)}
     .install{display:none}
     @media (min-width:620px){.app{padding-left:24px;padding-right:24px}}
   </style>
